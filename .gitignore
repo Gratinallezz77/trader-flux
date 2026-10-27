@@ -1,2 +1,6 @@
 .claude-flow/
 trader/
+.swarm/
+agentdb.rvf
+agentdb.rvf.idmap.json
+ruvector.db
