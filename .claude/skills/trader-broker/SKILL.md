@@ -101,7 +101,9 @@ against its source on 2026-10-20 (version 2.4.0).
    - every other tool that places, changes, cancels or closes anything
      (`cancel_order_by_id`, `replace_order_by_id`, `close_position`,
      `update_account_config`): Needs approval.
-   - `place_option_order`, `place_crypto_order`, `close_all_positions`,
+   - `place_crypto_order`: **Needs approval** if you trade crypto (`"allow_crypto": true`),
+     otherwise Blocked.
+   - `place_option_order`, `close_all_positions`,
      `cancel_all_orders`, `exercise_options_position`,
      `do_not_exercise_options_position`: **Blocked** unless the user has a
      reason and says so.
@@ -112,7 +114,7 @@ against its source on 2026-10-20 (version 2.4.0).
    in the Alpaca dashboard that it is the paper account.
 
 In Claude Code instead of Claude Desktop, keep the order tool on ask in
-`.claude/settings.json`: `"permissions": {"ask": ["mcp__alpaca__place_stock_order"]}`,
+`.claude/settings.json`: `"permissions": {"ask": ["mcp__alpaca__place_stock_order", "mcp__alpaca__place_crypto_order"]}`,
 and never put an order tool in `allow`.
 
 **Bracket orders on Alpaca.** `place_stock_order` takes
@@ -171,6 +173,25 @@ that draft orders to Needs approval too.
      open, nested true) shows them; `cancel_order_by_id` each one (Needs
      approval). Then `place_stock_order` with the ticket, then `result`.
 
+## Crypto on Alpaca
+
+With `"allow_crypto": true` in trader/config.json, pairs like `BTC/USD` go through the
+same gates (trader-risk PASS, the user's explicit yes, Allow once) and the ticket calls
+`place_crypto_order` instead of `place_stock_order`, with `order_type` in place of `type`.
+Check the arguments against the tool's own schema in your installed alpaca-mcp-server
+version before the first order.
+
+- Crypto trades 24/7, cash only, long only, fractional qty, `time_in_force` `gtc` or `ioc`.
+- **No brackets on crypto.** The entry goes alone. As soon as it fills:
+  `ticket.py result --index N --status placed --filled-qty Q --filled-price P`, then
+  `ticket.py crypto-stop --symbol BTC/USD --qty Q --stop S` (stop from the plan if omitted;
+  the limit sits `--slippage-pct` below it, default 0.5). That stop_limit sell goes through
+  trader-risk and a new yes like any order. Set a stop alert as well.
+- Closing: `ticket.py flatten --symbol BTC/USD` builds a market sell, `gtc`. Cancel the
+  open crypto stop first (get_orders, then cancel_order_by_id), or Alpaca holds the coins for it.
+- Crypto market data and the scanner, entry and alerts skills still read US-stock sources:
+  give the plan (entry, stop, target) yourself or from trader-exit with a price you supply.
+
 ## Example: the reel
 
 ```
@@ -197,7 +218,8 @@ buttons: Allow once, Deny. Allow once sends it to the paper account. The
 - Never places orders from a scheduled or background task: nobody is there to say yes.
 - Never asks for, reads, stores or repeats API keys or passwords.
 - Never switches `ALPACA_PAPER_TRADE` or `"paper"` to live. The user does that themselves.
-- Never calls `close_all_positions`, `cancel_all_orders`, option or crypto order tools on its own.
+- Never calls `close_all_positions`, `cancel_all_orders` or option order tools on its own; `place_crypto_order`
+  only for a crypto ticket that passed trader-risk with `"allow_crypto": true` and got the user's yes.
 - Never promises a fill price: a market order and a stop fill at whatever the market gives.
 
 ## Safety

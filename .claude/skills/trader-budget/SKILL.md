@@ -126,6 +126,14 @@ more than the $50 max loss: no order. At 10:52 the real quote was 366.48, so
 the same plan sizes to 6 shares at 8.16 a share, and reward:risk falls to
 0.44: refused, because the move it was waiting for has mostly happened.
 
+## Crypto (Alpaca)
+
+With `"allow_crypto": true`, a plan for a pair like `BTC/USD` is sized the same way (max
+loss, position cap, max order, cash) but in fractional units floored to
+`crypto_qty_decimals` (default 6), without rounding prices to the cent. The order is the
+entry alone (`market` or `limit`, `gtc`) with the plan attached: Alpaca has no crypto
+brackets, so trader-broker's `ticket.py crypto-stop` sends the stop after the fill.
+
 ## Weights mode (kept from v1)
 
 `--weights AAPL=22.04,KO=10.86` or `--targets FILE` (`targets.example.json`
