@@ -21,5 +21,9 @@
   "allow_margin": false,
   "allow_short": false,
   "pdt_guard": false,
+  "allow_crypto": false,
+  "crypto_qty_decimals": 6,
+  "crypto_no_entries_before": null,
+  "crypto_no_entries_after": null,
   "sec_user_agent": "Your Name you@example.com"
 }

@@ -62,7 +62,7 @@ batch that is fine order by order but breaks a limit together is caught.
 | check | blocks when |
 | --- | --- |
 | format | no symbol, side not buy or sell, both or neither of qty and notional, a notional order that is not market + day (Alpaca's rule), a limit order with no limit price; a bracket that is not whole shares, not `day` or `gtc`, or misses its stop-loss or take-profit |
-| asset | an option symbol while `allow_options` is false; crypto or anything that is not a US stock or ETF ticker |
+| asset | an option symbol while `allow_options` is false; a crypto pair (`BTC/USD`) while `allow_crypto` is false; anything else that is not a US stock or ETF ticker |
 | short | a sell of more than you hold (`allow_short` false) |
 | blocked | (entries) the ticker is on the `blocked` list |
 | size | (entries) under `min_order_usd` or over `max_order_usd` |
@@ -101,6 +101,24 @@ How the numbers work:
 Warnings do not block, but say them to the user: a LIVE account, a number
 sent as a number instead of a string, a stop that lives only in the plan and
 not at the broker, a price too old to use, an early close today.
+
+## Crypto (Alpaca)
+
+Off by default. With `"allow_crypto": true`, pairs like `BTC/USD`, `ETH/USD`, `SOL/USDT`
+pass the asset check and follow Alpaca's crypto rules:
+
+| check | crypto rule |
+| --- | --- |
+| format | type `market`, `limit` or `stop_limit`; `time_in_force` `gtc` or `ioc`; no bracket / `order_class` (Alpaca has none for crypto); fractional qty and market notional are fine |
+| short | always blocked: Alpaca has no crypto short selling |
+| cash | never margin, whatever `allow_margin` says |
+| window | the NYSE hours and window do not apply (24/7). Optional UTC window: `crypto_no_entries_before` / `crypto_no_entries_after` ("HH:MM") |
+| pdt | crypto does not count |
+
+The stop comes from the order's plan (there is no bracket leg), and the stop, loss,
+reward:risk, daily loss and trades limits apply as for stocks, without rounding to the
+cent. The ticket warns that the stop is not at the broker until `ticket.py crypto-stop`
+sends it after the fill.
 
 ## Steps
 
